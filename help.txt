@@ -1,0 +1,2 @@
+先注册一个思科模拟器账户，然后在思科模拟器中打开pkt文件即可
+思科模拟器中国官网：https://www.cisco.com/c/zh_cn/index.html?country-redirect=true

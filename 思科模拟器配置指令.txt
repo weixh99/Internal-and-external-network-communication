@@ -1,0 +1,93 @@
+1.四台PC机分别配ip地址
+ip地址：192.168.37.1-4
+掩码：255.255.255.0
+默认网关：192.168.37.254
+-------------------------------------------------------------------
+2.二层交换机Switch0
+（1）开启快速端口
+全局模式下：spanning-tree portfast default
+-------------------------------------------------------------------
+3.三层交换机HSRP1、2：
+全局模式下：
+（1）配置Vlan的SVI-ip
+ho Hsrp1
+int vlan 1
+ip add 192.168.37.100(200) 255.255.255.0
+no sh 
+（2）配f0/2端口的ip
+int f0/2
+no switchport
+int f0/2
+ip add 172.20(30).37.1 255.255.255.0
+no sh
+（3）rip协议配置
+ip routing
+router rip
+ver 2
+no au
+network 172.20（30）.0.0
+network 192.168.37.0
+（4）active和standby配置
+Hsrp1：
+int vlan 1
+standby 1 ip 192.168.37.254
+stan 1 pri 255
+stan 1 pree
+Hsrp2：
+int vlan 1
+no standby 1 ip 192.168.37.252
+standby 1 ip 192.168.37.254
+stan 1 pree
+（5）默认路由配置
+ip routing
+ip route 0.0.0.0 0.0.0.0 f0/2（三层交换机连接边界路由器的那个端口）
+（6）开启快速端口
+spanning-tree portfast default
+--------------------------------------------------------------------
+4.边界路由器border
+全局模式下
+（1）ip地址规划
+int f0/1 
+ip add 172.30.37.2 255.255.255.252
+no sh
+int f0/0
+ip add 172.20.37.2 255.255.255.252
+no sh
+int s0/1/0
+ip add 200.10.1.1 255.255.255.252
+no sh
+（2）rip配置
+router rip
+ver 2
+no au
+network 172.20.0.0
+network 172.30.0.0
+（3）默认路由配置
+ip route 0.0.0.0 0.0.0.0 s0/1/0
+（4）配置PAT
+先把四台主机ip写入access list 8（随便编个号）
+access-list 8 permit 192.168.37.1-4
+然后配置PAT
+ip nat inside source list 8 
+int s0/1/0
+ip nat outside
+int f0/0
+ip nat inside
+int f0/1
+ip nat inside
+----------------------------------------------------------------------
+5.外网四台路由器ISP1-4
+全局模式下
+（1）ip地址规划
+int 接口
+ip add 地址 掩码（255.255.255.252）
+no sh
+（2）ospf协议
+router ospf 2021（随便编个号码）
+network 和第一个邻居连线所在的网段 0.0.0.3 area 0
+network 和第二个邻居连线所在的网段 0.0.0.3 area 0
+----------------------------------------------------------------------
+6.web服务器
+ip地址：100.1.37.2
+默认网关：100.1.37.1
+掩码：255.255.255.252
